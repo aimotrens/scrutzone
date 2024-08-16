@@ -1,0 +1,25 @@
+mainserver/http-www:
+  address: &address 0.0.0.0
+  interval: 10
+  timeout: 5
+  notifyTargets:
+    - default
+  type: http
+  config:
+    scheme: http
+    hostname: www.mainserver.foo
+    port: 80
+    path: /
+    expectedCode: 200
+
+mainserver/http-cloud:
+  address: *address
+  notifyTargets:
+    - default
+  type: http
+  config:
+    scheme: https
+    hostname: cloud.mainserver.foo
+    port: 80
+    path: /
+    expectedCode: 404

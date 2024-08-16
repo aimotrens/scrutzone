@@ -1,0 +1,21 @@
+checkConfigDir: ./config/checks
+startupNotification:
+  targets: [default]
+
+checkDefaults:
+  interval: 60
+  timeout: 5
+
+notification:
+  defaultGroup: default
+  groups:
+    - name: default
+      email:
+        enabled: true
+        account:
+          host: mailserver
+          port: 587
+          username: username
+          password: ""
+        from: sender@example.com
+        to: [recipient@example.com]
