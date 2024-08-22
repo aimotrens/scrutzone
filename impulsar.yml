@@ -20,7 +20,7 @@ build:
     - |
       {{if eq .OS "windows"}}
         New-Item -Type Directory -Force release/{{.GOOS}}_{{.GOARCH}}
-        go build -o release/{{.GOOS}}_{{.GOARCH}}/scrutzone{{.EXE_SUFFIX}} -ldflags "-X `"main.scrutzoneVersion={{.SCRUTZONE_VERSION}}`" ` -X `"main.compileDate=$(Get-Date +UFormat %s)`""
+        go build -o release/{{.GOOS}}_{{.GOARCH}}/scrutzone{{.EXE_SUFFIX}} -ldflags "-X `"main.scrutzoneVersion={{.SCRUTZONE_VERSION}}`" ` -X `"main.compileDate=$(Get-Date -UFormat %s)`""
       {{else if eq .OS "linux"}}
         mkdir -p release/{{.GOOS}}_{{.GOARCH}}
         go build -o release/{{.GOOS}}_{{.GOARCH}}/scrutzone{{.EXE_SUFFIX}} -ldflags "-X \"main.scrutzoneVersion={{.SCRUTZONE_VERSION}}\" -X \"main.compileDate=$(date +%s)\""
@@ -46,28 +46,3 @@ pack-release:
       {{else}}
         tar cvfJ release/artifacts/scrutzone_{{.GOOS}}_{{.GOARCH}}.tar.xz -C release/{{.GOOS}}_{{.GOARCH}} scrutzone LICENSE README.md
       {{end}}
-
-# ---
-
-build-docker:
-  script:
-    - docker build --builder=multiarch --platform=linux/amd64,linux/arm64 -t {{.IMAGE}} --push .
-
-# ---
-
-install:
-  jobs:
-    - install-on-linux
-    - install-on-windows
-
-install-on-linux:
-  if:
-    - OS: linux
-  script:
-    - go install -ldflags "-X \"main.compileDate=$(date +%s)\""
-
-install-on-windows:
-  if:
-    - OS: windows
-  script:
-    - go install -ldflags "-X `"main.compileDate=$(Get-Date +UFormat %s)`""
