@@ -40,7 +40,7 @@ func (n *Notification) Notify(targets []NotifyTarget, subject, text string) {
 		targets = []NotifyTarget{n.DefaultTarget}
 	}
 
-	fmt.Println("Notifying: ", targets)
+	fmt.Println("Notifying:", targets, subject)
 
 	cd, ver := version.BuildInfo()
 	text += "\r\n\r\n" + "----------------------------------------\r\n"
