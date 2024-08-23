@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"net/smtp"
+	"os"
 	"strings"
 
 	"github.com/aimotrens/scrutzone/version"
@@ -100,7 +101,8 @@ func (e *Email) sendMail(subject, body string) {
 	var auth smtp.Auth
 
 	if e.Account != nil {
-		auth = smtp.PlainAuth("", e.Account.Username, e.Account.Password, e.Host)
+		expandedPassword := os.ExpandEnv(e.Account.Password)
+		auth = smtp.PlainAuth("", e.Account.Username, expandedPassword, e.Host)
 	}
 
 	err := smtp.SendMail(fmt.Sprintf("%s:%d", e.Host, e.Port), auth, e.From, e.To, []byte(sb.String()))
