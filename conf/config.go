@@ -1,6 +1,9 @@
 package conf
 
 import (
+	"crypto/sha512"
+	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"slices"
@@ -46,6 +49,7 @@ func loadMainConfig(configFilePath string) (*cmd.Config, error) {
 func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
 	configDir := os.DirFS(folder)
 
+	visitedFileHashes := []string{}
 	checks := make([]*cmd.Check, 0)
 	err := fs.WalkDir(configDir, ".", func(path string, dirEntry fs.DirEntry, e error) error {
 		// abort if there was an error
@@ -55,8 +59,10 @@ func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
 
 		// skip directories and files that are not yaml files
 		if dirEntry.IsDir() {
+			fmt.Println("Skipping directory: ", path)
 			return nil
 		} else if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
+			fmt.Println("Skipping non-yaml file: ", path)
 			return nil
 		}
 
@@ -66,6 +72,20 @@ func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
 		}
 		defer f.Close()
 
+		// create hash from file
+		hash, err := hashFileSHA512(f.(*os.File))
+		if err != nil {
+			return newGenericConfigError(err, path)
+		}
+
+		// check if the file was already visited
+		if slices.Contains(visitedFileHashes, hash) {
+			fmt.Println("Skipping duplicate file: ", path)
+			return nil
+		}
+		visitedFileHashes = append(visitedFileHashes, hash)
+
+		fmt.Println("Loading check config: ", path)
 		cfg := make(map[string]*cmd.Check)
 		d := yaml.NewDecoder(f)
 		d.KnownFields(true)
@@ -75,6 +95,7 @@ func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
 			return newGenericConfigError(err, path)
 		}
 
+		// loop over the checks and add them to the list
 		for k, v := range cfg {
 			if slices.ContainsFunc(checks, func(c *cmd.Check) bool {
 				return c.Name == k
@@ -96,4 +117,18 @@ func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
 	}
 
 	return checks, nil
+}
+
+func hashFileSHA512(f *os.File) (string, error) {
+	defer f.Seek(0, io.SeekStart)
+
+	hash := sha512.New()
+	if _, err := io.Copy(hash, f); err != nil {
+		return "", err
+	}
+
+	hashInBytes := hash.Sum(nil)
+	hashString := fmt.Sprintf("%x", hashInBytes)
+
+	return hashString, nil
 }
