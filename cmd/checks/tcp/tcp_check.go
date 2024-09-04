@@ -35,12 +35,12 @@ func (t *TcpCheck) Validate() error {
 }
 
 // Runs the TCP check
-func (t *TcpCheck) Run() func(*cmd.Notification) {
+func (t *TcpCheck) Run() (cmd.CheckState, cmd.NotifyFuncSwitch) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", t.check.Address, t.Port))
 	if err != nil {
-		return t.check.DefaultNotifyFunc(err)
+		return cmd.CheckFailed, t.check.DefaultNotifyFailedFunc(cmd.OnStateChanged, t.check.NewError(err))
 	}
 	defer conn.Close()
 
-	return nil
+	return cmd.CheckOk, t.check.DefaultNotifyOkFunc(cmd.OnStateChanged)
 }

@@ -84,11 +84,11 @@ func (h *HttpCheck) Validate() error {
 }
 
 // Runs the HTTP check
-func (h *HttpCheck) Run() func(*cmd.Notification) {
+func (h *HttpCheck) Run() (cmd.CheckState, cmd.NotifyFuncSwitch) {
 	url := fmt.Sprintf("%s://%s:%d%s", h.Scheme, h.Hostname, h.Port, h.Path)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return h.check.DefaultNotifyFunc(err)
+		return cmd.CheckFailed, h.check.DefaultNotifyFailedFunc(cmd.OnStateChanged, h.check.NewError(err))
 	}
 
 	if h.Username != "" || h.Password != "" {
@@ -97,14 +97,14 @@ func (h *HttpCheck) Run() func(*cmd.Notification) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return h.check.DefaultNotifyFunc(err)
+		return cmd.CheckFailed, h.check.DefaultNotifyFailedFunc(cmd.OnStateChanged, h.check.NewError(err))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != int(h.ExpectedCode) {
 		err := fmt.Errorf("expected code %d, got %d", h.ExpectedCode, resp.StatusCode)
-		return h.check.DefaultNotifyFunc(err)
+		return cmd.CheckFailed, h.check.DefaultNotifyFailedFunc(cmd.OnStateChanged, h.check.NewError(err))
 	}
 
-	return nil
+	return cmd.CheckOk, h.check.DefaultNotifyOkFunc(cmd.OnStateChanged)
 }

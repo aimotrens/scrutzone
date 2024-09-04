@@ -25,7 +25,8 @@ type MetaCheck struct {
 	Config        map[string]any `yaml:"config"`
 	NotifyTargets []NotifyTarget `yaml:"notifyTargets"`
 
-	notificationSent bool
+	previousState CheckState
+	currentState  CheckState
 }
 
 // Sets the default values for the check
@@ -41,6 +42,9 @@ func (mc *MetaCheck) SetDefaults(def *CheckDefaults) {
 	if mc.Interval == 0 {
 		mc.Interval = *def.Interval
 	}
+
+	// we suggest that the check is OK by default to avoid sending unnecessary notifications on startup
+	mc.previousState = CheckOk
 }
 
 // Validates the check configuration
@@ -68,7 +72,7 @@ func (mc *MetaCheck) Validate() error {
 	return errors.Join(errs...)
 }
 
-// Returns the check detail based on the check type
+// Returns the check based on the check type
 func (mc *MetaCheck) getCheck() (ICheck, error) {
 	data, _ := yaml.Marshal(mc.Config)
 	d := yaml.NewDecoder(bytes.NewReader(data))
@@ -94,19 +98,20 @@ func (mc *MetaCheck) getCheck() (ICheck, error) {
 
 // Runs the check
 func (mc *MetaCheck) Run() func(*Notification) {
+	defer mc.RollState()
+
 	fmt.Printf("Running check %s\n", mc.Name)
 
 	check, err := mc.getCheck()
 	if err != nil {
-		return mc.DefaultNotifyFunc(err)
+		mc.SetState(CheckFailed)
+		return mc.DefaultNotifyFailedFunc(OnStateChanged, mc.NewError(err))()
 	}
 
-	n := check.Run()
-	if n == nil {
-		mc.ResetNotificationSent()
-	}
+	s, n := check.Run()
+	mc.SetState(s)
 
-	return n
+	return n()
 }
 
 // Initializes the ticker for the check
@@ -122,35 +127,87 @@ func (mc *MetaCheck) InitTicker(runQueue chan<- func() func(*Notification)) {
 	}()
 }
 
-// Sets the notification sent flag
-func (mc *MetaCheck) SetNotificationSent() {
-	mc.notificationSent = true
+// Sets the previous state of the check
+func (mc *MetaCheck) SetState(s CheckState) {
+	mc.currentState = s
 }
 
-// Resets the notification sent flag
-func (mc *MetaCheck) ResetNotificationSent() {
-	mc.notificationSent = false
+// Returns a default notification function for errors
+// If cond() returns true, it returns a func that sends a notification
+// If cond() returns false and the current check state is CheckFailed, it returns a func that prints only a log message
+// Otherwise, it returns nil
+func (mc *MetaCheck) DefaultNotifyFailedFunc(cond func(mc *MetaCheck) bool, err *CheckError) NotifyFuncSwitch {
+	return func() func(*Notification) {
+		n := func(n *Notification) {
+			n.Notify(
+				mc.NotifyTargets,
+				fmt.Sprintf("scrutzone | check failure for %s", mc.Name),
+				err.Error(),
+			)
+		}
+		l := func(n *Notification) {
+			fmt.Println("Notification already sent for check ", mc.Name)
+		}
+
+		if cond(mc) {
+			return n
+		}
+
+		// only log if the notification has already been sent
+		if mc.previousState == CheckFailed {
+			return l
+		}
+
+		return nil
+	}
 }
 
-// Returns the notification sent flag
-func (mc *MetaCheck) IsNotificationSent() bool {
-	return mc.notificationSent
+// Returns a default notification function for OK messages
+// If cond() returns true, it returns a func that sends a notification
+// Otherwise, it returns nil
+func (mc *MetaCheck) DefaultNotifyOkFunc(cond func(mc *MetaCheck) bool) NotifyFuncSwitch {
+	return func() func(*Notification) {
+		n := func(n *Notification) {
+			n.Notify(mc.NotifyTargets, "scrutzone Check OK", fmt.Sprintf("Check %s OK", mc.Name))
+		}
+
+		if cond(mc) {
+			return n
+		}
+
+		return nil
+	}
 }
 
-// Returns a default notification function
-// If the notification has already been sent, it returns a function that only prints to Stdout and does not send a notification
-func (mc *MetaCheck) DefaultNotifyFunc(err error) func(*Notification) {
-	n := func(n *Notification) {
-		n.Notify(mc.NotifyTargets, "scrutzone Check Failure", NewCheckError(mc.Name, err).Error())
-	}
-	l := func(n *Notification) {
-		fmt.Println("Notification already sent for check ", mc.Name)
-	}
+// Checks if the state has changed
+func (mc *MetaCheck) HasStateChanged() bool {
+	return mc.previousState != mc.currentState
+}
 
-	if !mc.IsNotificationSent() {
-		mc.SetNotificationSent()
-		return n
-	}
+// Rolls the state of the check
+func (m *MetaCheck) RollState() {
+	m.previousState = m.currentState
+}
 
-	return l
+// Creates a new error for the check
+func (mc *MetaCheck) NewError(err error) *CheckError {
+	return &CheckError{
+		checkName: mc.Name,
+		err:       err,
+	}
+}
+
+// Activates the notification if the state has changed
+func OnStateChanged(mc *MetaCheck) bool {
+	return mc.HasStateChanged()
+}
+
+// Always activates the notification
+func Always(mc *MetaCheck) bool {
+	return true
+}
+
+// Never activates the notification
+func Never(mc *MetaCheck) bool {
+	return false
 }
