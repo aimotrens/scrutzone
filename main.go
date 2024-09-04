@@ -54,6 +54,7 @@ func main() {
 		check.InitTicker(runQueue)
 	}
 
+	// Send a startup notification if configured
 	if config.StartupNotification != nil {
 		go config.Notification.Notify(config.StartupNotification.Targets, "scrutzone Startup", "scrutzone started")
 	}

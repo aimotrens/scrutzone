@@ -14,7 +14,7 @@ func init() {
 
 // Represents the configuration for an HTTP check
 type HttpCheck struct {
-	check *cmd.Check
+	check *cmd.MetaCheck
 
 	Hostname     string     `yaml:"hostname"`
 	Port         int        `yaml:"port"`
@@ -36,14 +36,14 @@ func (hs HttpScheme) Validate() error {
 }
 
 // Creates a new HTTP check
-func NewHttpCheck(c *cmd.Check) cmd.ICheckDetail {
+func NewHttpCheck(c *cmd.MetaCheck) cmd.ICheck {
 	return &HttpCheck{
 		check: c,
 	}
 }
 
 // Sets the default values for the HTTP check
-func (h *HttpCheck) SetDefaults(c *cmd.Check) {
+func (h *HttpCheck) SetDefaults(c *cmd.MetaCheck) {
 	if h.Hostname == "" {
 		h.Hostname = c.Address
 	}

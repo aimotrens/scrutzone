@@ -7,5 +7,5 @@ type Config struct {
 	Notification        *Notification        `yaml:"notification"`
 	CheckDefaults       *CheckDefaults       `yaml:"checkDefaults"`
 
-	Checks []*Check
+	Checks []*MetaCheck
 }

@@ -5,6 +5,7 @@ import (
 	"net/smtp"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aimotrens/scrutzone/version"
 )
@@ -42,10 +43,10 @@ func (n *Notification) Notify(targets []NotifyTarget, subject, text string) {
 
 	fmt.Println("Notifying:", targets, subject)
 
-	cd, ver := version.BuildInfo()
+	_, ver := version.BuildInfo()
 	text += "\r\n\r\n" + "----------------------------------------\r\n"
 	text += fmt.Sprintf("scrutzone version: %s\r\n", ver)
-	text += fmt.Sprintf("compiled at: %s\r\n", cd)
+	text += fmt.Sprintf("notification time: %s\r\n", time.Now().Format(time.RFC3339))
 
 	for _, t := range targets {
 		if g, ok := n.Targets[string(t)]; !ok {

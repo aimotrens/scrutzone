@@ -46,11 +46,11 @@ func loadMainConfig(configFilePath string) (*cmd.Config, error) {
 	return config, nil
 }
 
-func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
+func loadCheckConfigs(folder string) ([]*cmd.MetaCheck, error) {
 	configDir := os.DirFS(folder)
 
 	visitedFileHashes := []string{}
-	checks := make([]*cmd.Check, 0)
+	checks := make([]*cmd.MetaCheck, 0)
 	err := fs.WalkDir(configDir, ".", func(path string, dirEntry fs.DirEntry, e error) error {
 		// abort if there was an error
 		if e != nil {
@@ -86,7 +86,7 @@ func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
 		visitedFileHashes = append(visitedFileHashes, hash)
 
 		fmt.Println("Loading check config: ", path)
-		cfg := make(map[string]*cmd.Check)
+		cfg := make(map[string]*cmd.MetaCheck)
 		d := yaml.NewDecoder(f)
 		d.KnownFields(true)
 
@@ -97,7 +97,7 @@ func loadCheckConfigs(folder string) ([]*cmd.Check, error) {
 
 		// loop over the checks and add them to the list
 		for k, v := range cfg {
-			if slices.ContainsFunc(checks, func(c *cmd.Check) bool {
+			if slices.ContainsFunc(checks, func(c *cmd.MetaCheck) bool {
 				return c.Name == k
 			}) {
 				return newDuplicateKeyError(k, path)

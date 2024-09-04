@@ -13,20 +13,20 @@ func init() {
 
 // Represents the configuration for a TCP check
 type TcpCheck struct {
-	check *cmd.Check
+	check *cmd.MetaCheck
 
 	Port int `yaml:"port"`
 }
 
 // Creates a new TCP check
-func NewTcpCheck(c *cmd.Check) cmd.ICheckDetail {
+func NewTcpCheck(c *cmd.MetaCheck) cmd.ICheck {
 	return &TcpCheck{
 		check: c,
 	}
 }
 
 // Sets the default values for the TCP check
-func (t *TcpCheck) SetDefaults(c *cmd.Check) {
+func (t *TcpCheck) SetDefaults(c *cmd.MetaCheck) {
 }
 
 // Validates the TCP check configuration
