@@ -95,7 +95,12 @@ func (h *HttpCheck) Run() (cmd.CheckState, cmd.NotifyFuncSwitch) {
 		req.SetBasicAuth(h.Username, h.Password)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	httpClient := http.DefaultClient
+	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return cmd.CheckFailed, h.check.DefaultNotifyFailedFunc(cmd.OnStateChanged, h.check.NewError(err))
 	}
