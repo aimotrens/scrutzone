@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/aimotrens/scrutzone/cmd"
 	"github.com/aimotrens/scrutzone/conf"
@@ -56,7 +58,23 @@ func main() {
 
 	// Send a startup notification if configured
 	if config.StartupNotification != nil {
-		go config.Notification.Notify(config.StartupNotification.Targets, "scrutzone Startup", "scrutzone started")
+		sb := new(strings.Builder)
+		sb.WriteString("scrutzone started\n\n")
+		sb.WriteString("Configured checks:\n")
+
+		unsorted := func(yield func(v string) bool) {
+			for _, v := range config.Checks {
+				if !yield(v.Name) {
+					return
+				}
+			}
+		}
+
+		for _, checkName := range slices.Sorted(unsorted) {
+			sb.WriteString(fmt.Sprintf("  %s\n", checkName))
+		}
+
+		go config.Notification.Notify(config.StartupNotification.Targets, "scrutzone Startup", sb.String())
 	}
 
 	for checkRun := range runQueue {
