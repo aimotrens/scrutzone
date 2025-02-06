@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine@sha256:4089e3ca89edc5c1fbfbcfe2404d46ed30d8cf3fdfdca295d16c68131e5fd04c AS builder
+FROM golang:1.23-alpine@sha256:2c49857f2295e89b23b28386e57e018a86620a8fede5003900f2d138ba9c4037 AS builder
 WORKDIR /src
 
 ARG SCRUTZONE_VERSION
