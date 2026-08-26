@@ -13,7 +13,7 @@ jobs:
     - name: prepare go
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
       with:
-        go-version: '1.26'
+        go-version: '1.27'
     - name: Test
       run: go test -v ./...
 
@@ -53,7 +53,7 @@ jobs:
     - name: prepare go
       uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
       with:
-        go-version: '1.26'
+        go-version: '1.27'
     - name: prepare impulsar
       uses: aimotrens/impulsar@a41a1124d5be9280991771bfddd7c23b66efa2e5 # main
     - name: Build
