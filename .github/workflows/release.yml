@@ -55,7 +55,7 @@ jobs:
       with:
         go-version: '1.27'
     - name: prepare impulsar
-      uses: aimotrens/impulsar@4575477871f4bd8c4a909df4ac1447b7ee5ab5e0 # main
+      uses: aimotrens/impulsar@a7f7e544f3cc50b28f64b9d2d7ab058a4cc97f8d # main
     - name: Build
       env:
         SCRUTZONE_VERSION: ${{ needs.tag-next-version.outputs.version }}
